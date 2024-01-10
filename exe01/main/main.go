@@ -60,6 +60,16 @@ func main() {
 		w.Write(productBytes)
 	})
 
+	r.Post("/products", func(w http.ResponseWriter, r *http.Request) {
+		var product Product
+		if err := json.NewDecoder(r.Body).Decode(&product); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		ValidateNewProduct(&product)
+		w.WriteHeader(http.StatusCreated)
+	})
+
 	http.ListenAndServe(":8081", r)
 
 }
@@ -91,4 +101,17 @@ func LoadProducts() {
 		panic(err)
 	}
 	json.Unmarshal(file, &products)
+}
+
+func ValidateNewProduct(product *Product) (err error) {
+	product.ID = (len(products) + 1)
+	products = append(products, *product)
+
+	for _, v := range products {
+		if v.CodeValue == product.CodeValue {
+			err = errors.New("product already exists")
+		}
+	}
+	return
+
 }
