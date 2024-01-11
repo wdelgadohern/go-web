@@ -71,3 +71,13 @@ func (p *ProductStore) GetByPriceGT(price float64) (products []internal.Product,
 	}
 	return
 }
+
+func (p *ProductStore) Update(product *internal.Product) (err error) {
+	for i, v := range p.products {
+		if v.ID == product.ID {
+			p.products[i] = *product
+			return nil
+		}
+	}
+	return internal.ErrProductNotFound
+}

@@ -30,3 +30,7 @@ func (p *ProductDefault) GetByID(id int) (product internal.Product, err error) {
 func (p *ProductDefault) GetByPriceGT(price float64) (products []internal.Product, err error) {
 	return p.rp.GetByPriceGT(price)
 }
+
+func (p *ProductDefault) Update(product *internal.Product) (err error) {
+	return p.rp.Update(product)
+}

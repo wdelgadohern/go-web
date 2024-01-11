@@ -114,3 +114,35 @@ func (p *ProductDefault) GetByPriceGT() http.HandlerFunc {
 
 	}
 }
+
+func (p *ProductDefault) Update() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+		product, err := p.sv.GetByID(id)
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		var body BodyRequestProductJSON
+		if err := request.JSON(r, &body); err != nil {
+			response.Text(w, http.StatusBadRequest, "invalid body")
+			return
+		}
+		product.Name = body.Name
+		product.Quantity = body.Quantity
+		product.CodeValue = body.CodeValue
+		product.IsPublished = body.IsPublished
+		product.Expiration = body.Expiration
+		product.Price = body.Price
+
+		if err := p.sv.Update(&product); err != nil {
+			response.Text(w, http.StatusInternalServerError, "internal server error")
+			return
+		}
+
+		response.JSON(w, http.StatusOK, map[string]any{
+			"message": "movie updated",
+			"data":    product,
+		})
+	}
+}

@@ -5,4 +5,5 @@ type ProductService interface {
 	GetAll() (products []Product, err error)
 	GetByID(id int) (product Product, err error)
 	GetByPriceGT(price float64) (products []Product, err error)
+	Update(product *Product) (err error)
 }
