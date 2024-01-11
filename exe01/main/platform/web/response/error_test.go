@@ -1,7 +1,7 @@
 package response_test
 
 import (
-	"app/scaffolding/platform/web/response"
+	"main/platform/web/response"
 	"net/http"
 	"net/http/httptest"
 	"testing"
