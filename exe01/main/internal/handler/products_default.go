@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"main/internal"
+	"main/internal/auth"
 	"main/platform/web/request"
 	"main/platform/web/response"
 	"net/http"
@@ -11,15 +12,17 @@ import (
 	"github.com/go-chi/chi"
 )
 
-func NewDefaultProduct(sv internal.ProductService) *ProductDefault {
+func NewDefaultProduct(sv internal.ProductService, au auth.AuthToken) *ProductDefault {
 	return &ProductDefault{
 		sv: sv,
+		au: au,
 	}
 
 }
 
 type ProductDefault struct {
 	sv internal.ProductService
+	au auth.AuthToken
 }
 
 type ProductJSON struct {
@@ -82,6 +85,12 @@ func (p *ProductDefault) Create() http.HandlerFunc {
 
 func (p *ProductDefault) GetAll() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		token := r.Header.Get("Token")
+		err := p.au.Auth(token)
+		if err != nil {
+			response.Error(w, http.StatusUnauthorized, "Unauthorized")
+			return
+		}
 		products, _ := p.sv.GetAll()
 		productBytes, _ := json.Marshal(products)
 		w.Write(productBytes)
