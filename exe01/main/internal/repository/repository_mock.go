@@ -6,6 +6,7 @@ type ProductRepositoryMock struct {
 	FuncGet     func() (p []internal.Product, err error)
 	FuncGetById func(id int) (p internal.Product, err error)
 	FuncSave    func(product *internal.Product) (err error)
+	FuncDelete  func(id int) (err error)
 }
 
 func NewRepositoryMock() *ProductRepositoryMock {
@@ -34,5 +35,10 @@ func (s *ProductRepositoryMock) GetByPriceGT(price float64) (p []internal.Produc
 
 func (s *ProductRepositoryMock) Update(product *internal.Product) (err error) {
 	err = s.FuncSave(product)
+	return
+}
+
+func (s *ProductRepositoryMock) Delete(id int) (err error) {
+	err = s.FuncDelete(id)
 	return
 }

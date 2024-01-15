@@ -81,3 +81,13 @@ func (p *ProductStore) Update(product *internal.Product) (err error) {
 	}
 	return internal.ErrProductNotFound
 }
+
+func (p *ProductStore) Delete(id int) (err error) {
+	for i, v := range p.products {
+		if v.ID == id {
+			p.products = append(p.products[:i], p.products[i+1:]...)
+			return nil
+		}
+	}
+	return internal.ErrProductNotFound
+}

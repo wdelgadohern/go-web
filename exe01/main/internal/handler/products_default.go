@@ -155,3 +155,18 @@ func (p *ProductDefault) Update() http.HandlerFunc {
 		})
 	}
 }
+
+func (p *ProductDefault) Delete() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, _ := strconv.Atoi(chi.URLParam(r, "id"))
+		err := p.sv.Delete(id)
+		if err != nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		response.JSON(w, http.StatusOK, map[string]any{
+			"message": "product deleted successfully",
+		})
+	}
+
+}

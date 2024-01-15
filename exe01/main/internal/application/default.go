@@ -42,6 +42,7 @@ func (h *DefaultHTTP) Run() (err error) {
 	rt.Get("/products/{id}", hd.GetByID())
 	rt.Get("/products/search", hd.GetByPriceGT())
 	rt.Put("/products/{id}", hd.Update())
+	rt.Delete("/products/{id}", hd.Delete())
 	err = http.ListenAndServe(h.addr, rt)
 	return
 }

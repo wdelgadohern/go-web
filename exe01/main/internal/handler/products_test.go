@@ -2,6 +2,7 @@ package handler_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"main/internal"
 	"main/internal/auth"
@@ -20,7 +21,6 @@ func TestHandlerProducts_Get_Handler(t *testing.T) {
 	t.Run("Success to get a list of products", func(t *testing.T) {
 
 		// Arrange
-		// p.au.Auth("1234")
 		at := auth.NewAuthTokenMock()
 		at.FuncAuth = func(token string) (err error) {
 			return
@@ -44,6 +44,34 @@ func TestHandlerProducts_Get_Handler(t *testing.T) {
 		expectedCode := http.StatusOK
 		expectedBody := `[{"id":1,"name":"Product 1","quantity":10,"code_value":"1234","is_published":true,"expiration":"2021-12-31","price":10}]`
 		require.JSONEq(t, expectedBody, res.Body.String())
+		require.Equal(t, expectedCode, res.Code)
+
+	})
+
+	t.Run("fail - Unauthorized request", func(t *testing.T) {
+
+		// Arrange
+		at := auth.NewAuthTokenMock()
+		at.FuncAuth = func(token string) (err error) {
+			return errors.New("Unauthorized")
+		}
+		rp := repository.NewRepositoryMock()
+		rp.FuncGet = func() (p []internal.Product, err error) {
+			p = []internal.Product{
+				*internal.NewProduct(1, "Product 1", 10, "1234", true, "2021-12-31", 10),
+			}
+			return
+		}
+		hd := handler.NewDefaultProduct(rp, at)
+		hdFunc := hd.GetAll()
+
+		// Act
+		req := &http.Request{}
+		res := httptest.NewRecorder()
+		hdFunc(res, req)
+
+		// Assert
+		expectedCode := http.StatusUnauthorized
 		require.Equal(t, expectedCode, res.Code)
 
 	})
@@ -93,6 +121,34 @@ func TestHandlerProducts_GetById_Handler(t *testing.T) {
 
 	})
 
+	t.Run("fail - id not found", func(t *testing.T) {
+
+		// Arrange
+		at := auth.NewAuthTokenMock()
+		at.FuncAuth = func(token string) (err error) {
+			return
+		}
+
+		rp := repository.NewRepositoryMock()
+		rp.FuncGetById = func(id int) (p internal.Product, err error) {
+			err = internal.ErrProductNotFound
+			return
+		}
+		hd := handler.NewDefaultProduct(rp, at)
+		hdFunc := hd.GetByID()
+		// Act
+		req := &http.Request{}
+		chiCtx := chi.NewRouteContext() // *chi.Context to handle params
+		chiCtx.URLParams.Add("id", "50000")
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx)) // replace *http.Request with the new request having the updated context
+		res := httptest.NewRecorder()
+		hdFunc(res, req)
+		// Assert
+		expectedCode := http.StatusNotFound
+		require.Equal(t, expectedCode, res.Code)
+
+	})
+
 }
 
 func TestHandlerProducts_Post_Handler(t *testing.T) {
@@ -133,4 +189,66 @@ func TestHandlerProducts_Post_Handler(t *testing.T) {
 
 	})
 
+	t.Run("fail - invalid request", func(t *testing.T) {
+		// Arrange
+		at := auth.NewAuthTokenMock()
+		at.FuncAuth = func(token string) (err error) {
+			return
+		}
+
+		rp := repository.NewRepositoryMock()
+		rp.FuncSave = func(product *internal.Product) (err error) {
+			product.ID = 1
+			return
+		}
+
+		// Act
+		hd := handler.NewDefaultProduct(rp, at)
+		hdFunc := hd.Create()
+		req := httptest.NewRequest("POST", "/products", strings.NewReader(`{"name":1,"quantity":10,"code_value":"1234","is_published":true,"expiration":"2021-12-31","price":10}`))
+		req.Header.Set("Content-Type", "application/json") // Set the Content-Type header for JSON
+
+		res := httptest.NewRecorder()
+		hdFunc(res, req)
+
+		// Assert
+		expectedCode := http.StatusBadRequest
+		require.Equal(t, expectedCode, res.Code)
+
+	})
+
+}
+
+func TestHandlerProducts_Delete_Handler(t *testing.T) {
+	t.Run("Success to delete a product", func(t *testing.T) {
+		// Arrange
+		at := auth.NewAuthTokenMock()
+		at.FuncAuth = func(token string) (err error) {
+			return
+		}
+
+		rp := repository.NewRepositoryMock()
+		rp.FuncDelete = func(id int) (err error) {
+			return
+		}
+		// Act
+		hd := handler.NewDefaultProduct(rp, at)
+		hdFunc := hd.Delete()
+
+		req := &http.Request{}
+		chiCtx := chi.NewRouteContext() // *chi.Context to handle params
+		chiCtx.URLParams.Add("id", "1")
+		req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, chiCtx)) // replace *http.Request with the new request having the updated context
+
+		res := httptest.NewRecorder()
+
+		hdFunc(res, req)
+
+		// assert
+		expectedCode := http.StatusOK
+		expectedBody := `{"message":"product deleted successfully"}`
+		require.Equal(t, expectedCode, res.Code)
+		require.JSONEq(t, expectedBody, res.Body.String())
+
+	})
 }
